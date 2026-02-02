@@ -20,11 +20,6 @@ const Index = () => {
               <h1 className="text-xl font-bold text-foreground">CloudHost CDN</h1>
               <p className="text-xs text-muted-foreground">Fast, reliable file hosting</p>
             </div>
-            <div className="ml-auto">
-              <span className="px-3 py-1 text-xs rounded-full bg-primary/10 text-primary border border-primary/20">
-                Demo Mode
-              </span>
-            </div>
           </div>
         </div>
       </header>
@@ -47,15 +42,6 @@ const Index = () => {
         </section>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-border/50 mt-auto">
-        <div className="container mx-auto px-4 py-6 text-center">
-          <p className="text-sm text-muted-foreground">
-            This is a demo. Files are not actually stored.{" "}
-            <span className="text-primary">Enable Lovable Cloud</span> for real file hosting.
-          </p>
-        </div>
-      </footer>
     </div>
   );
 };
