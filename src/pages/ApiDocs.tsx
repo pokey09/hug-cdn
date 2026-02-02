@@ -39,6 +39,7 @@ function MethodBadge({ method }: { method: string }) {
   const colors: Record<string, string> = {
     GET: "bg-green-500/10 text-green-400 border-green-500/20",
     POST: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+    PATCH: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
     DELETE: "bg-red-500/10 text-red-400 border-red-500/20",
   };
   return (
@@ -105,12 +106,41 @@ const endpoints: Endpoint[] = [
   -H "X-API-Key: YOUR_API_KEY"`,
   },
   {
+    method: "PATCH",
+    path: "/api/files/:id",
+    description: "Rename a file. Updates the file's display name and CDN URL. The stored file on disk is unchanged.",
+    auth: true,
+    requestBody: `{ "name": "new-filename.jpg" }`,
+    responseBody: `{
+  "success": true,
+  "name": "new-filename.jpg",
+  "cdnUrl": "/cdn/a1b2c3d4-.../new-filename.jpg"
+}`,
+    curl: `curl -X PATCH ${BASE_URL}/api/files/a1b2c3d4-... \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"name": "new-filename.jpg"}'`,
+  },
+  {
     method: "DELETE",
     path: "/api/files/:id",
     description: "Delete a file from the CDN by its ID. This removes both the file from storage and its metadata.",
     auth: true,
     responseBody: `{ "success": true }`,
     curl: `curl -X DELETE ${BASE_URL}/api/files/a1b2c3d4-... \\
+  -H "X-API-Key: YOUR_API_KEY"`,
+  },
+  {
+    method: "POST",
+    path: "/api/keys-regenerate/:id",
+    description: "Regenerate an API key. Replaces the existing key value with a new one. The old key immediately stops working.",
+    auth: true,
+    responseBody: `{
+  "id": "a1b2c3d4-...",
+  "key": "cdn_new_generated_key_here",
+  "name": "Production"
+}`,
+    curl: `curl -X POST ${BASE_URL}/api/keys-regenerate/a1b2c3d4-... \\
   -H "X-API-Key: YOUR_API_KEY"`,
   },
   {
@@ -212,6 +242,14 @@ const ApiDocs = () => {
 
                 <div className="px-6 py-4 space-y-4">
                   <p className="text-sm text-muted-foreground">{ep.description}</p>
+
+                  {/* Request body */}
+                  {ep.requestBody && (
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Request Body</p>
+                      <CodeBlock lang="json">{ep.requestBody}</CodeBlock>
+                    </div>
+                  )}
 
                   {/* curl example */}
                   <div>
