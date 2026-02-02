@@ -5,12 +5,13 @@ import { randomUUID } from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { createServer as createViteServer } from 'vite';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 3001;
+const PORT = 8082;
 
 const UPLOADS_DIR = path.join(__dirname, 'uploads');
 const DATA_FILE = path.join(__dirname, 'cdn-data.json');
@@ -79,7 +80,6 @@ app.post('/api/upload', upload.array('files', 20), (req, res) => {
 
   saveData(data);
 
-  // Return file records with CDN URLs
   const result = uploaded.map((f) => ({
     ...f,
     cdnUrl: `/cdn/${f.id}/${encodeURIComponent(f.name)}`,
@@ -109,12 +109,10 @@ app.delete('/api/files/:id', (req, res) => {
   const file = data.files[fileIndex];
   const filePath = path.join(UPLOADS_DIR, file.storedName);
 
-  // Remove from disk
   if (fs.existsSync(filePath)) {
     fs.unlinkSync(filePath);
   }
 
-  // Remove from data
   data.files.splice(fileIndex, 1);
   saveData(data);
 
@@ -152,12 +150,10 @@ app.get('/cdn/:id/:filename', (req, res) => {
     return res.status(404).json({ error: 'File missing from storage' });
   }
 
-  // Track stats
   data.stats.totalRequests++;
   data.stats.totalBandwidth += file.size;
   saveData(data);
 
-  // Set appropriate headers
   res.setHeader('Content-Type', file.type);
   res.setHeader('Content-Disposition', `inline; filename="${file.name}"`);
   res.setHeader('Content-Length', file.size);
@@ -168,8 +164,21 @@ app.get('/cdn/:id/:filename', (req, res) => {
   stream.pipe(res);
 });
 
-app.listen(PORT, () => {
-  console.log(`CDN Server running at http://localhost:${PORT}`);
-  console.log(`Uploads directory: ${UPLOADS_DIR}`);
-  console.log(`Files stored: ${data.files.length}`);
-});
+// Start server with Vite middleware for dev
+async function start() {
+  const vite = await createViteServer({
+    server: { middlewareMode: true },
+    appType: 'spa',
+  });
+
+  // All non-API/CDN requests go through Vite
+  app.use(vite.middlewares);
+
+  app.listen(PORT, '::', () => {
+    console.log(`CDN Server running at http://localhost:${PORT}`);
+    console.log(`Uploads directory: ${UPLOADS_DIR}`);
+    console.log(`Files stored: ${data.files.length}`);
+  });
+}
+
+start();
