@@ -10,7 +10,11 @@ export interface CdnStats {
   status: string;
 }
 
-export function useFileUpload() {
+function authHeaders(token: string | null): Record<string, string> {
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+export function useFileUpload(token: string | null) {
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [stats, setStats] = useState<CdnStats>({
     totalFiles: 0,
@@ -21,17 +25,17 @@ export function useFileUpload() {
     status: 'Active',
   });
 
-  // Load existing files and stats from server on mount
   const refreshData = useCallback(async () => {
+    if (!token) return;
     try {
+      const headers = authHeaders(token);
       const [filesRes, statsRes] = await Promise.all([
-        fetch('/api/files'),
-        fetch('/api/stats'),
+        fetch('/api/files', { headers }),
+        fetch('/api/stats', { headers }),
       ]);
       if (filesRes.ok) {
         const serverFiles = await filesRes.json();
         setFiles((prev) => {
-          // Keep any currently uploading files, replace completed ones with server data
           const uploading = prev.filter((f) => f.status === 'uploading');
           const loaded: UploadedFile[] = serverFiles.map((f: any) => ({
             id: f.id,
@@ -52,14 +56,13 @@ export function useFileUpload() {
     } catch (err) {
       console.error('Failed to load data from server:', err);
     }
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     refreshData();
   }, [refreshData]);
 
   const uploadFiles = useCallback(async (newFiles: File[]) => {
-    // Add placeholder entries immediately with uploading status
     const placeholders: UploadedFile[] = newFiles.map((file, i) => ({
       id: `uploading-${Date.now()}-${i}`,
       name: file.name,
@@ -73,7 +76,6 @@ export function useFileUpload() {
 
     setFiles((prev) => [...placeholders, ...prev]);
 
-    // Simulate progress while uploading
     const progressIntervals = placeholders.map((ph) => {
       let progress = 0;
       return setInterval(() => {
@@ -92,10 +94,10 @@ export function useFileUpload() {
 
       const res = await fetch('/api/upload', {
         method: 'POST',
+        headers: authHeaders(token),
         body: formData,
       });
 
-      // Clear progress intervals
       progressIntervals.forEach(clearInterval);
 
       if (!res.ok) {
@@ -104,7 +106,6 @@ export function useFileUpload() {
 
       const uploaded = await res.json();
 
-      // Replace placeholders with real data
       setFiles((prev) => {
         const withoutPlaceholders = prev.filter(
           (f) => !placeholders.some((ph) => ph.id === f.id)
@@ -122,8 +123,7 @@ export function useFileUpload() {
         return [...completed, ...withoutPlaceholders];
       });
 
-      // Refresh stats
-      const statsRes = await fetch('/api/stats');
+      const statsRes = await fetch('/api/stats', { headers: authHeaders(token) });
       if (statsRes.ok) {
         setStats(await statsRes.json());
       }
@@ -131,7 +131,6 @@ export function useFileUpload() {
       console.error('Upload failed:', err);
       progressIntervals.forEach(clearInterval);
 
-      // Mark as error
       setFiles((prev) =>
         prev.map((f) =>
           placeholders.some((ph) => ph.id === f.id)
@@ -140,15 +139,17 @@ export function useFileUpload() {
         )
       );
     }
-  }, []);
+  }, [token]);
 
   const deleteFile = useCallback(async (id: string) => {
     try {
-      const res = await fetch(`/api/files/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/files/${id}`, {
+        method: 'DELETE',
+        headers: authHeaders(token),
+      });
       if (res.ok) {
         setFiles((prev) => prev.filter((f) => f.id !== id));
-        // Refresh stats
-        const statsRes = await fetch('/api/stats');
+        const statsRes = await fetch('/api/stats', { headers: authHeaders(token) });
         if (statsRes.ok) {
           setStats(await statsRes.json());
         }
@@ -156,17 +157,12 @@ export function useFileUpload() {
     } catch (err) {
       console.error('Delete failed:', err);
     }
-  }, []);
-
-  const totalSize = stats.totalSize;
-  const completedFiles = stats.totalFiles;
+  }, [token]);
 
   return {
     files,
     uploadFiles,
     deleteFile,
-    totalSize,
-    completedFiles,
     stats,
     refreshStats: refreshData,
   };
