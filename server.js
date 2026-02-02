@@ -128,7 +128,7 @@ app.delete('/api/keys/:id', requireAuth, async (req, res) => {
   res.json({ success: true });
 });
 
-app.post('/api/keys/:id/regenerate', requireAuth, async (req, res) => {
+app.post('/api/keys-regenerate/:id', requireAuth, async (req, res) => {
   const { id } = req.params;
   const [rows] = await db.query('SELECT id, name FROM api_keys WHERE id = ?', [id]);
   if (rows.length === 0) {

@@ -85,7 +85,7 @@ export function useApiKeys(token: string | null) {
     async (id: string): Promise<NewApiKey | null> => {
       if (!token) return null;
       try {
-        const res = await fetch(`/api/keys/${id}/regenerate`, {
+        const res = await fetch(`/api/keys-regenerate/${id}`, {
           method: "POST",
           headers: authHeaders(token),
         });
