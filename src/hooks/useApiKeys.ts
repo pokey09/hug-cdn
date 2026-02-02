@@ -81,6 +81,28 @@ export function useApiKeys(token: string | null) {
     [token]
   );
 
+  const regenerateKey = useCallback(
+    async (id: string): Promise<NewApiKey | null> => {
+      if (!token) return null;
+      try {
+        const res = await fetch(`/api/keys/${id}/regenerate`, {
+          method: "POST",
+          headers: authHeaders(token),
+        });
+        if (res.ok) {
+          const regenerated: NewApiKey = await res.json();
+          setNewlyCreatedKey(regenerated);
+          await loadKeys();
+          return regenerated;
+        }
+      } catch (err) {
+        console.error("Failed to regenerate API key:", err);
+      }
+      return null;
+    },
+    [token, loadKeys]
+  );
+
   const dismissNewKey = useCallback(() => {
     setNewlyCreatedKey(null);
   }, []);
@@ -90,6 +112,7 @@ export function useApiKeys(token: string | null) {
     newlyCreatedKey,
     createKey,
     deleteKey,
+    regenerateKey,
     dismissNewKey,
   };
 }

@@ -5,9 +5,10 @@ import type { UploadedFile } from "@/types/file";
 interface FileListProps {
   files: UploadedFile[];
   onDelete: (id: string) => void;
+  onRename: (id: string, name: string) => Promise<boolean>;
 }
 
-export function FileList({ files, onDelete }: FileListProps) {
+export function FileList({ files, onDelete, onRename }: FileListProps) {
   if (files.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -29,7 +30,7 @@ export function FileList({ files, onDelete }: FileListProps) {
         <span className="text-sm text-muted-foreground">{files.length} file{files.length !== 1 ? 's' : ''}</span>
       </div>
       {files.map((file) => (
-        <FileItem key={file.id} file={file} onDelete={onDelete} />
+        <FileItem key={file.id} file={file} onDelete={onDelete} onRename={onRename} />
       ))}
     </div>
   );

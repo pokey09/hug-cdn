@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { File, Image, Film, Music, FileText, Archive, Copy, Check, Trash2, ExternalLink } from "lucide-react";
+import { File, Image, Film, Music, FileText, Archive, Copy, Check, Trash2, ExternalLink, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import type { UploadedFile } from "@/types/file";
@@ -8,6 +9,7 @@ import type { UploadedFile } from "@/types/file";
 interface FileItemProps {
   file: UploadedFile;
   onDelete: (id: string) => void;
+  onRename: (id: string, name: string) => Promise<boolean>;
 }
 
 function getFileIcon(type: string) {
@@ -36,9 +38,27 @@ function formatDate(date: Date): string {
   }).format(date);
 }
 
-export function FileItem({ file, onDelete }: FileItemProps) {
+export function FileItem({ file, onDelete, onRename }: FileItemProps) {
   const [copied, setCopied] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState(file.name);
   const Icon = getFileIcon(file.type);
+
+  const handleRename = async () => {
+    const trimmed = editName.trim();
+    if (!trimmed || trimmed === file.name) {
+      setEditing(false);
+      setEditName(file.name);
+      return;
+    }
+    const success = await onRename(file.id, trimmed);
+    if (success) {
+      setEditing(false);
+    } else {
+      setEditName(file.name);
+      setEditing(false);
+    }
+  };
 
   const copyToClipboard = async () => {
     await navigator.clipboard.writeText(file.cdnUrl);
@@ -67,7 +87,21 @@ export function FileItem({ file, onDelete }: FileItemProps) {
         {/* File Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <p className="font-medium text-foreground truncate">{file.name}</p>
+            {editing ? (
+              <Input
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleRename();
+                  if (e.key === 'Escape') { setEditing(false); setEditName(file.name); }
+                }}
+                onBlur={handleRename}
+                className="h-7 text-sm bg-muted/50 border-border/50"
+                autoFocus
+              />
+            ) : (
+              <p className="font-medium text-foreground truncate">{file.name}</p>
+            )}
             {file.status === 'complete' && (
               <span className="shrink-0 px-2 py-0.5 text-xs rounded-full bg-green-500/10 text-green-400 border border-green-500/20">
                 Live
@@ -97,7 +131,17 @@ export function FileItem({ file, onDelete }: FileItemProps) {
             <Button
               variant="ghost"
               size="icon"
+              onClick={() => { setEditName(file.name); setEditing(true); }}
+              title="Rename file"
+              className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
+            >
+              <Pencil className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={copyToClipboard}
+              title="Copy CDN URL"
               className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
             >
               {copied ? (

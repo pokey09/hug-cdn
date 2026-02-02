@@ -12,8 +12,8 @@ import { Button } from "@/components/ui/button";
 
 const Index = () => {
   const { token, isAuthenticated, checking, login, logout } = useAuth();
-  const { files, uploadFiles, deleteFile, stats } = useFileUpload(token);
-  const { keys, newlyCreatedKey, createKey, deleteKey, dismissNewKey } = useApiKeys(token);
+  const { files, uploadFiles, deleteFile, renameFile, stats } = useFileUpload(token);
+  const { keys, newlyCreatedKey, createKey, deleteKey, regenerateKey, dismissNewKey } = useApiKeys(token);
 
   if (checking) {
     return (
@@ -81,7 +81,7 @@ const Index = () => {
 
         {/* File List */}
         <section className="mb-8">
-          <FileList files={files} onDelete={deleteFile} />
+          <FileList files={files} onDelete={deleteFile} onRename={renameFile} />
         </section>
 
         {/* API Keys */}
@@ -91,6 +91,7 @@ const Index = () => {
             newlyCreatedKey={newlyCreatedKey}
             onCreateKey={createKey}
             onDeleteKey={deleteKey}
+            onRegenerateKey={regenerateKey}
             onDismissNewKey={dismissNewKey}
           />
         </section>

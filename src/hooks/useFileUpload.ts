@@ -159,10 +159,33 @@ export function useFileUpload(token: string | null) {
     }
   }, [token]);
 
+  const renameFile = useCallback(async (id: string, name: string) => {
+    try {
+      const res = await fetch(`/api/files/${id}`, {
+        method: 'PATCH',
+        headers: { ...authHeaders(token), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setFiles((prev) =>
+          prev.map((f) =>
+            f.id === id ? { ...f, name: data.name, cdnUrl: data.cdnUrl } : f
+          )
+        );
+        return true;
+      }
+    } catch (err) {
+      console.error('Rename failed:', err);
+    }
+    return false;
+  }, [token]);
+
   return {
     files,
     uploadFiles,
     deleteFile,
+    renameFile,
     stats,
     refreshStats: refreshData,
   };

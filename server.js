@@ -128,6 +128,23 @@ app.delete('/api/keys/:id', requireAuth, async (req, res) => {
   res.json({ success: true });
 });
 
+app.post('/api/keys/:id/regenerate', requireAuth, async (req, res) => {
+  const { id } = req.params;
+  const [rows] = await db.query('SELECT id, name FROM api_keys WHERE id = ?', [id]);
+  if (rows.length === 0) {
+    return res.status(404).json({ error: 'API key not found' });
+  }
+
+  const newKey = generateApiKey();
+  await db.query('UPDATE api_keys SET api_key = ?, last_used_at = NULL WHERE id = ?', [newKey, id]);
+
+  res.json({
+    id: rows[0].id,
+    key: newKey,
+    name: rows[0].name,
+  });
+});
+
 // --- File Management ---
 
 const storage = multer.diskStorage({
@@ -188,6 +205,22 @@ app.get('/api/files', requireAuth, async (req, res) => {
     cdnUrl: `/cdn/${f.id}/${encodeURIComponent(f.name)}`,
   }));
   res.json(filesWithUrls);
+});
+
+app.patch('/api/files/:id', requireAuth, async (req, res) => {
+  const { id } = req.params;
+  const { name } = req.body;
+  if (!name || typeof name !== 'string' || !name.trim()) {
+    return res.status(400).json({ error: 'File name is required' });
+  }
+
+  const [rows] = await db.query('SELECT id FROM files WHERE id = ?', [id]);
+  if (rows.length === 0) {
+    return res.status(404).json({ error: 'File not found' });
+  }
+
+  await db.query('UPDATE files SET name = ? WHERE id = ?', [name.trim(), id]);
+  res.json({ success: true, name: name.trim(), cdnUrl: `/cdn/${id}/${encodeURIComponent(name.trim())}` });
 });
 
 app.delete('/api/files/:id', requireAuth, async (req, res) => {
