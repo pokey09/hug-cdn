@@ -266,10 +266,24 @@ async function start() {
 
   const vite = await createViteServer({
     server: { middlewareMode: true },
-    appType: 'spa',
+    appType: 'custom',
   });
 
   app.use(vite.middlewares);
+
+  // SPA fallback — serve index.html for non-API GET requests
+  app.use('*', async (req, res, next) => {
+    if (req.method !== 'GET') return next();
+    try {
+      const url = req.originalUrl;
+      let html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf-8');
+      html = await vite.transformIndexHtml(url, html);
+      res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
+    } catch (e) {
+      vite.ssrFixStacktrace(e);
+      next(e);
+    }
+  });
 
   app.listen(PORT, '::', () => {
     console.log(`CDN Server running at http://localhost:${PORT}`);
