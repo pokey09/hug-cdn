@@ -272,7 +272,7 @@ async function start() {
   app.use(vite.middlewares);
 
   // SPA fallback — serve index.html for non-API GET requests
-  app.use('*', async (req, res, next) => {
+  app.use('/{*splat}', async (req, res, next) => {
     if (req.method !== 'GET') return next();
     try {
       const url = req.originalUrl;
