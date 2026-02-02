@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import multer from 'multer';
 import cors from 'cors';
@@ -12,7 +13,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 8082;
+const PORT = process.env.PORT || 8082;
 
 const UPLOADS_DIR = path.join(__dirname, 'uploads');
 
@@ -23,16 +24,16 @@ if (!fs.existsSync(UPLOADS_DIR)) {
 
 // MySQL connection pool
 const db = mysql.createPool({
-  host: '51.222.27.45',
-  port: 3306,
-  user: 'parker',
-  password: '14thBday2006',
-  database: 'cdn_sys',
+  host: process.env.DB_HOST,
+  port: parseInt(process.env.DB_PORT || '3306'),
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
   waitForConnections: true,
   connectionLimit: 10,
 });
 
-const PASSWORD = 'MyCDN26!';
+const PASSWORD = process.env.CDN_PASSWORD;
 const activeSessions = new Set();
 
 function generateToken() {

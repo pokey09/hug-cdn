@@ -11,6 +11,7 @@ node_modules
 dist
 uploads/
 cdn-data.json
+.env
 dist-ssr
 *.local
 
